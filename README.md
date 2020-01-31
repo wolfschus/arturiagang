@@ -3,6 +3,8 @@ A Midi Sequence for Linux / SDL to control Arturia BeatStepPro.
 
 Works perfect on Raspberry Pi with touchscreen. To use touchscreen, please run it in fullscreen on X.
 
+short video: https://youtu.be/BszJ_SOvSSw
+
 To use binary:
 
 sudo apt install libsdl-gfx1.2-5
