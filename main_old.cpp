@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Arturiagang.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.95 31.01.2020
+// Version     : 0.9 30.01.2020
 // Copyright   : Wolfgang Schuster
 // Description : Sequencer to control BeatStepPro
 // License     : GNU General Public License v3.0
@@ -21,10 +21,6 @@
 #include <sqlite3.h>
 #include <unistd.h>
 #include <algorithm>
-#include <sys/sysinfo.h>
-#include <fstream>
-#include <iostream>
-#include <sstream>
 
 #include "images/media-playback-start.xpm"
 #include "images/media-playback-pause.xpm"
@@ -48,7 +44,6 @@
 #include "images/go-last.xpm"
 #include "images/go-up.xpm"
 #include "images/go-down.xpm"
-#include "images/plug.xpm"
 
 using namespace std;
 
@@ -92,22 +87,9 @@ int bpm = 60;
 float bpmcorrect=1.00;
 bool timerrun=false;
 bool clockmodeext=false;
-bool exttimerrun = false;
 
-struct cpuwerte{
-	float idle;
-	float usage;
-};
-
-cpuwerte oldcpu;
-cpuwerte newcpu;
-float cpuusage;
-int anzahlcpu;
-int cputimer = 0;
-struct sysinfo memInfo;
 
 RtMidiOut *midiout = new RtMidiOut();
-RtMidiIn *midiin = new RtMidiIn();
 
 class WSMidi
 {
@@ -169,50 +151,7 @@ public:
 		return;
 	}
 
-	void Play()
-	{
-		playmode=1;
-		Clock_Start(aset[3].mididevice);
-		Clock_Start(aset[4].mididevice);
-		if(clockmodeext==false)
-		{
-			Clock_Start(aset[5].mididevice);
-		}
-		timerrun=true;
-		aktstep=15;
-	}
 
-	void Pause()
-	{
-		playmode=2;
-		Clock_Stop(aset[3].mididevice);
-		Clock_Stop(aset[4].mididevice);
-		if(clockmodeext==false)
-		{
-			Clock_Stop(aset[5].mididevice);
-		}
-		timerrun=false;
-
-	}
-
-	void Stop()
-	{
-		for(int i=0;i<6;i++)
-		{
-		  if(pattern[i][0])
-		  {
-			  ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][0]-1);
-		  }
-		}
-		playmode=0;
-		Clock_Stop(aset[3].mididevice);
-		Clock_Stop(aset[4].mididevice);
-		Clock_Stop(aset[5].mididevice);
-		timerrun=false;
-		aktstep=15;
-		aktpos=0;
-		startpos=0;
-	}
 
 	void ProgramChange(uint mididevice, int midichannel, int program)
 	{
@@ -259,73 +198,6 @@ public:
 		}
 		return;
 	}
-
-	void NextTick()
-	{
-	  Clock_Tick(aset[3].mididevice);
-	  Clock_Tick(aset[4].mididevice);
-	  if(clockmodeext==false)
-	  {
-		  Clock_Tick(aset[5].mididevice);
-	  }
-
-	  oldmiditick=miditick;
-	  if(miditick<5)
-	  {
-		  miditick++;
-	  }
-	  else
-	  {
-		  miditick=0;
-		  oldstep=aktstep;
-		  aktstep++;
-		  if(aktstep==8)
-		  {
-			  for(int i=0;i<6;i++)
-			  {
-				  if(pattern[i][aktpos]>0)
-				  {
-					  aset[i].aktiv=true;
-						if(aset[i].minbank==aset[i].maxbank)
-						{
-							ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
-						}
-						else
-						{
-							ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
-						}
-				  }
-				  else
-				  {
-					  aset[i].aktiv=false;
-				  }
-			  }
-		  }
-		  if(aktstep>maxstep)
-		  {
-			  aktstep=0;
-			  if(pattern[5][aktpos]==1)
-			  {
-				playmode=0;
-				Clock_Stop(aset[3].mididevice);
-				Clock_Stop(aset[4].mididevice);
-				Clock_Stop(aset[5].mididevice);
-				timerrun=false;
-				aktstep=15;
-				aktpos=0;
-				startpos=0;
-			  }
-			  if(aktpos<255)
-			  {
-				  aktpos++;
-			  }
-			  else
-			  {
-				  aktpos=0;
-			  }
-		  }
-	  }
-	}
 };
 
 WSMidi wsmidi;
@@ -344,10 +216,69 @@ public:
    {
       while(1)
 	  {
-    	  usleep(60000000/(24*(bpm*bpmcorrect+60)));
+    	  usleep(60000000/(24*(bpm*bpmcorrect+60))); //timedivision*4/bpm);
     	  if(timerrun==true and clockmodeext==false)
     	  {
-    		  wsmidi.NextTick();
+    		  wsmidi.Clock_Tick(aset[3].mididevice);
+   			wsmidi.Clock_Tick(aset[4].mididevice);
+    		  wsmidi.Clock_Tick(aset[5].mididevice);
+
+    		  oldmiditick=miditick;
+    		  if(miditick<5)
+    		  {
+    			  miditick++;
+    		  }
+    		  else
+    		  {
+    			  miditick=0;
+				  oldstep=aktstep;
+				  aktstep++;
+				  if(aktstep==8)
+				  {
+					  for(int i=0;i<6;i++)
+					  {
+						  if(pattern[i][aktpos]>0)
+						  {
+							  aset[i].aktiv=true;
+								if(aset[i].minbank==aset[i].maxbank)
+								{
+									wsmidi.ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
+								}
+								else
+								{
+									wsmidi.ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
+								}
+						  }
+						  else
+						  {
+							  aset[i].aktiv=false;
+						  }
+					  }
+				  }
+				  if(aktstep>maxstep)
+				  {
+					  aktstep=0;
+					  if(pattern[5][aktpos]==1)
+					  {
+						playmode=0;
+						wsmidi.Clock_Stop(aset[3].mididevice);
+						wsmidi.Clock_Stop(aset[4].mididevice);
+						wsmidi.Clock_Stop(aset[5].mididevice);
+						timerrun=false;
+						aktstep=15;
+						aktpos=0;
+						startpos=0;
+					  }
+					  if(aktpos<255)
+					  {
+						  aktpos++;
+					  }
+					  else
+					  {
+						  aktpos=0;
+					  }
+				  }
+    		  }
      	  }
 	  }
    }
@@ -357,65 +288,6 @@ private:
    {
       ThreadClass *tc = reinterpret_cast<ThreadClass*>(ptr);
       tc->UpdateMidiTimer();
-      return 0;
-   }
-};
-
-class ThreadCPUClass
-{
-public:
-   void run()
-   {
-      pthread_t thread;
-
-      pthread_create(&thread, NULL, entry, this);
-   }
-
-   void UpdateCPUTimer()
-   {
-      while(1)
-	  {
-    	  usleep(200000);
-    	  oldcpu.idle=newcpu.idle;
-    	  oldcpu.usage=newcpu.usage;
-    	  newcpu=get_cpuusage();
-    	  cpuusage=((newcpu.usage - oldcpu.usage)/(newcpu.idle + newcpu.usage - oldcpu.idle - oldcpu.usage))*100;
-    	  sysinfo (&memInfo);
-	  }
-   }
-
-   cpuwerte get_cpuusage()
-   {
-		ifstream fileStat("/proc/stat");
-		string line;
-
-		cpuwerte cpuusage;
-
-		while(getline(fileStat,line))
-		{
-			if(line.find("cpu ")==0)
-			{
-				istringstream ss(line);
-				string token;
-
-				vector<string> result;
-				while(std::getline(ss, token, ' '))
-				{
-					result.push_back(token);
-				}
-				cpuusage.idle=atof(result[5].c_str()) + atof(result[6].c_str());
-				cpuusage.usage=atof(result[2].c_str()) + atof(result[3].c_str()) + atof(result[4].c_str()) + atof(result[7].c_str()) + atof(result[8].c_str()) + atof(result[9].c_str()) + atof(result[10].c_str()) + atof(result[11].c_str());
-			}
-		}
-		return cpuusage;
-
-   }
-
-private:
-   static void * entry(void *ptr)
-   {
-      ThreadCPUClass *tcc = reinterpret_cast<ThreadCPUClass*>(ptr);
-      tcc->UpdateCPUTimer();
       return 0;
    }
 };
@@ -526,48 +398,6 @@ static int patternnamecallback(void* data, int argc, char** argv, char** azColNa
 	return 0;
 }
 
-void midiincallback( double deltatime, std::vector< unsigned char > *message, void *userData )
-{
-	unsigned int nBytes = message->size();
-	if(clockmodeext==true)
-	{
-//		for(int i=0;i<nBytes;i++)
-//		{
-//			cout << (int)message->at(i) << " ";
-//		}
-//		cout << endl;
-
-		if((int)message->at(0)==248 and playmode==1)
-		{
-  		  wsmidi.NextTick();
-		}
-
-		if((int)message->at(0)==240)
-		{
-			if((int)message->at(1)==127 and (int)message->at(2)==127 and (int)message->at(3)==6 and (int)message->at(4)==2 and (int)message->at(5)==247)
-			{
-				wsmidi.Play();
-			}
-		}
-		if((int)message->at(0)==240)
-		{
-			if((int)message->at(1)==127 and (int)message->at(2)==127 and (int)message->at(3)==6 and (int)message->at(4)==1 and (int)message->at(5)==247)
-			{
-				wsmidi.Stop();
-			}
-		}
-		if((int)message->at(0)==240)
-		{
-			if((int)message->at(1)==127 and (int)message->at(2)==127 and (int)message->at(3)==6 and (int)message->at(4)==9 and (int)message->at(5)==247)
-			{
-				wsmidi.Pause();
-			}
-		}
-	}
-	return;
-}
-
-
 bool CheckMouse(int mousex, int mousey, SDL_Rect Position)
 {
 	if( ( mousex > Position.x ) && ( mousex < Position.x + Position.w ) && ( mousey > Position.y ) && ( mousey < Position.y + Position.h ) )
@@ -596,66 +426,33 @@ int main(int argc, char* argv[])
 {
 	bool debug=false;
 	bool fullscreen=false;
-
-// Argumentverarbeitung
+	
+	// Argumentverarbeitung
 	for (int i = 0; i < argc; ++i)
 	{
-		if(string(argv[i])=="--fullscreen" or string(argv[i])=="-f")
+		if(string(argv[i])=="--help")
+		{
+			cout << "Arturiagang" << endl;
+			cout << "(c) 2019 - 2020 by Wolfgang Schuster" << endl;
+			cout << "arturiagang --fullscreen = fullscreen" << endl;
+			cout << "arturiagang --debug = debug" << endl;
+			cout << "arturiagang --help = this screen" << endl;
+			SDL_Quit();
+			exit(0);
+		}
+		if(string(argv[i])=="--fullscreen")
 		{
 			fullscreen=true;
 		}
-		if(string(argv[i])=="--debug" or string(argv[i])=="-d")
+		if(string(argv[i])=="--debug")
 		{
 			debug=true;
 		}
-		if(string(argv[i])=="--help" or string(argv[i])=="-h")
-		{
-			cout << "Arturiagang V1.0 (c) 1987-2020 by Wolfgang Schuster" << endl;
-			cout << "--debug or -d = Debug" << endl;
-			cout << "--fullscreen or -f = fullscreen" << endl;
-			cout << "--help or -h = this help" << endl;
-			cout << "--midiports or -m = available Midiports" << endl;
-			SDL_Quit();
-			return 0;
-		}
-		if(string(argv[i])=="--midiports" or string(argv[i])=="-m")
-		{
-			// Check available Midi ports.
-			int onPorts = midiout->getPortCount();
-			cout << "MIDI OUT" << endl;
-			if ( onPorts == 0 )
-			{
-				cout << "No ports available!" << endl;
-			}
-			else
-			{
-				for(int i=0;i<onPorts;i++)
-				{
-					cout << midiout->getPortName(i) << endl;
-				}
-			}
-			int inPorts = midiin->getPortCount();
-			cout << "MIDI IN" << endl;
-			if ( inPorts == 0 )
-			{
-				cout << "No ports available!" << endl;
-			}
-			else
-			{
-				for(int i=0;i<inPorts;i++)
-				{
-					cout << midiin->getPortName(i) << endl;
-				}
-			}
-			SDL_Quit();
-			return 0;
-		}
 	}
+
 
 	ThreadClass tc;
 	tc.run();
-	ThreadCPUClass tcc;
-	tcc.run();
 
 	if(SDL_Init(SDL_INIT_VIDEO) == -1)
 	{
@@ -746,17 +543,16 @@ int main(int argc, char* argv[])
 	SDL_Surface* last_image = IMG_ReadXPMFromArray(go_last_xpm);
 	SDL_Surface* up_image = IMG_ReadXPMFromArray(go_up_xpm);
 	SDL_Surface* down_image = IMG_ReadXPMFromArray(go_down_xpm);
-	SDL_Surface* plug_image = IMG_ReadXPMFromArray(plug_xpm);
 
 	char tmp[256];
 
 	char sql[512];
 
-	// Load SettingsDB
-	sqlite3 *settingsdb;
 	char dbpath[1024];
 	sprintf(dbpath, "%s/.arturiagang/settings.db", getenv("HOME"));
 
+	// Load SettingsDB
+	sqlite3 *settingsdb;
 	if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
 	{
 		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(settingsdb) << endl;
@@ -789,8 +585,6 @@ int main(int argc, char* argv[])
 	char keyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","z","u","i","o","p","a","s","d","f","g","h","j","k","l","+","y","x","c","v","b","n","m",",",".","-"};
 	char shkeyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","Q","W","E","R","T","Z","U","I","O","P","A","S","D","F","G","H","J","K","L","*","Y","X","C","V","B","N","M",";",":","_"};
 
-	anzahlcpu=get_nprocs();
-	sysinfo (&memInfo);
 
 	int aktprog[5] = {aset[0].minprog,aset[1].minprog,aset[2].minprog,aset[3].minprog,aset[4].minprog};
 
@@ -829,7 +623,6 @@ int main(int argc, char* argv[])
 	WSButton settings_prev(34,19,2,2,scorex,scorey,prev_image,"");
 	WSButton settings_up(24,19,2,2,scorex,scorey,up_image,"");
 	WSButton settings_down(26,19,2,2,scorex,scorey,down_image,"");
-	WSButton extmidi(0,17,2,2,scorex,scorey,plug_image,"");
 
 	vector <WSButton> manuell_progdown;
 	vector <WSButton> manuell_progup;
@@ -863,7 +656,6 @@ int main(int argc, char* argv[])
 	}
 
 	int save_song=0;
-	int fortschritt = 0;
 
 	vector <WSButton> keyboard;
 	for(int i=0;i<10;i++)
@@ -935,7 +727,6 @@ int main(int argc, char* argv[])
 	SDL_Rect songnamePosition;
 
 	vector<unsigned char> message;
-	vector<unsigned char> inmessage;
 	vector<unsigned char> cc;
 	message.push_back(0);
 	message.push_back(0);
@@ -957,15 +748,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// MIDI IN Device -> BestStepPro
-	if(aset[5].mididevice<onPorts)
-	{
-		midiin->openPort( aset[5].mididevice );
-		midiin->setCallback( &midiincallback );
-		// Don't ignore sysex, timing, or active sensing messages.
-		midiin->ignoreTypes( false, false, false );
-	}
-
 	while(run)
 	{
 		if(oldstep!=aktstep)
@@ -975,10 +757,12 @@ int main(int argc, char* argv[])
 		if(aktpos>(startpos+1)*16)
 		{
 			startpos++;
+			cout << aktpos << " " << startpos << endl;
 		}
 		if(aktpos<startpos*16+1 and aktpos>0)
 		{
 			startpos--;
+			cout << aktpos << " " << startpos << endl;
 		}
 		blink++;
 		if(blink>200)
@@ -1024,35 +808,6 @@ int main(int argc, char* argv[])
 					textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 					textPosition.y = 3*scorey-text->h;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
-
-// CPU und RAM
-					boxColor(screen, 0.2*scorex,0.25*scorey,0.4*scorex,1.25*scorey,0x2F2F2FFF);
-					if(cpuusage>90)
-					{
-						boxColor(screen, 0.2*scorex,(0.25+(100-cpuusage)/100)*scorey,0.4*scorex,1.25*scorey,0xFF0000FF);
-					}
-					else if(cpuusage>80)
-					{
-						boxColor(screen, 0.2*scorex,(0.25+(100-cpuusage)/100)*scorey,0.4*scorex,1.25*scorey,0xFFFF00FF);
-					}
-					else
-					{
-						boxColor(screen, 0.2*scorex,(0.25+(100-cpuusage)/100)*scorey,0.4*scorex,1.25*scorey,0x00FF00FF);
-					}
-
-					boxColor(screen, 0.6*scorex,0.25*scorey,0.8*scorex,1.25*scorey,0x2F2F2FFF);
-					if(float(memInfo.freeram+memInfo.bufferram+memInfo.sharedram)/float(memInfo.totalram)<0.1)
-					{
-						boxColor(screen, 0.6*scorex,(0.25+float(memInfo.freeram+memInfo.bufferram+memInfo.sharedram)/float(memInfo.totalram))*scorey,0.8*scorex,1.25*scorey,0xFF0000FF);
-					}
-					else if(float(memInfo.freeram+memInfo.bufferram+memInfo.sharedram)/float(memInfo.totalram)<0.2)
-					{
-						boxColor(screen, 0.6*scorex,(0.25+float(memInfo.freeram+memInfo.bufferram+memInfo.sharedram)/float(memInfo.totalram))*scorey,0.8*scorex,1.25*scorey,0xFFFF00FF);
-					}
-					else
-					{
-						boxColor(screen, 0.6*scorex,(0.25+float(memInfo.freeram+memInfo.bufferram+memInfo.sharedram)/float(memInfo.totalram))*scorey,0.8*scorex,1.25*scorey,0x00FF00FF);
-					}
 
 // Taktanzeige
 					for (int i=0;i<16;i++)
@@ -1117,22 +872,22 @@ int main(int argc, char* argv[])
 							boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
 						}
 					}
-				}
-// Device Names
-				for(int i=0;i<5;i++)
-				{
+
+					for(int i=0;i<5;i++)
+					{
+						SDL_FreeSurface(text);
+						sprintf(tmp, "%s",aset[i].name.c_str());
+						text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+						textPosition.x = 0.2*scorex;
+						textPosition.y = 4*scorey+(2*i)*scorey-text->h/2;
+						SDL_BlitSurface(text, 0, screen, &textPosition);
+					}
 					SDL_FreeSurface(text);
-					sprintf(tmp, "%s",aset[i].name.c_str());
-					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+					text = TTF_RenderText_Blended(fontsmall, "Control", textColor);
 					textPosition.x = 0.2*scorex;
-					textPosition.y = 4*scorey+(2*i)*scorey-text->h/2;
+					textPosition.y = 14*scorey-text->h/2;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 				}
-				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontsmall, "Control", textColor);
-				textPosition.x = 0.2*scorex;
-				textPosition.y = 14*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
 
 // BeatStep Pro Project
 				SDL_FreeSurface(text);
@@ -1152,47 +907,41 @@ int main(int argc, char* argv[])
 				bspfb.show(screen, fontsmall);
 
 // BPM
+				SDL_FreeSurface(text);
+				text = TTF_RenderText_Blended(font, "BPM", textColor);
+				textPosition.x = 17*scorex-text->w/2;
+				textPosition.y = 17*scorey-text->h;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
 
-				if(clockmodeext==false)
-				{
-					SDL_FreeSurface(text);
-					text = TTF_RenderText_Blended(font, "BPM", textColor);
-					textPosition.x = 17*scorex-text->w/2;
-					textPosition.y = 17*scorey-text->h;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
+				SDL_FreeSurface(text);
+				sprintf(tmp, "%d",bpm+60);
+				text = TTF_RenderText_Blended(font, tmp, textColor);
+				textPosition.x = 17*scorex-text->w/2;
+				textPosition.y = 18*scorey-text->h/2;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
 
-					SDL_FreeSurface(text);
-					sprintf(tmp, "%d",bpm+60);
-					text = TTF_RenderText_Blended(font, tmp, textColor);
-					textPosition.x = 17*scorex-text->w/2;
-					textPosition.y = 18*scorey-text->h/2;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
+				bpm10ff.show(screen, fontsmall);
+				bpmff.show(screen, fontsmall);
+				bpmfb.show(screen, fontsmall);
+				bpm10fb.show(screen, fontsmall);
 
-					bpm10ff.show(screen, fontsmall);
-					bpmff.show(screen, fontsmall);
-					bpmfb.show(screen, fontsmall);
-					bpm10fb.show(screen, fontsmall);
+				SDL_FreeSurface(text);
+				text = TTF_RenderText_Blended(font, "BPM correction", textColor);
+				textPosition.x = 29*scorex-text->w/2;
+				textPosition.y = 17*scorey-text->h;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
 
-					SDL_FreeSurface(text);
-					text = TTF_RenderText_Blended(font, "BPM correction", textColor);
-					textPosition.x = 29*scorex-text->w/2;
-					textPosition.y = 17*scorey-text->h;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
+				SDL_FreeSurface(text);
+				sprintf(tmp, "%.2f",bpmcorrect);
+				text = TTF_RenderText_Blended(font, tmp, textColor);
+				textPosition.x = 29*scorex-text->w/2;
+				textPosition.y = 18*scorey-text->h/2;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
 
-					SDL_FreeSurface(text);
-					sprintf(tmp, "%.2f",bpmcorrect);
-					text = TTF_RenderText_Blended(font, tmp, textColor);
-					textPosition.x = 29*scorex-text->w/2;
-					textPosition.y = 18*scorey-text->h/2;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
-
-					bpmcor10ff.show(screen, fontsmall);
-					bpmcorff.show(screen, fontsmall);
-					bpmcorfb.show(screen, fontsmall);
-					bpmcor10fb.show(screen, fontsmall);
-				}
-
-				extmidi.show(screen, fontsmall);
+				bpmcor10ff.show(screen, fontsmall);
+				bpmcorff.show(screen, fontsmall);
+				bpmcorfb.show(screen, fontsmall);
+				bpmcor10fb.show(screen, fontsmall);
 // Exit Info
 
 				exit.show(screen, fontsmall);
@@ -1240,7 +989,7 @@ int main(int argc, char* argv[])
 			if(mode==1) // Info
 			{
 				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontbold, "(c) 1987-2020 by Wolfgang Schuster", textColor);
+				text = TTF_RenderText_Blended(fontbold, "(c) 2019 - 2020 by Wolfgang Schuster", textColor);
 				textPosition.x = screen->w/2-text->w/2;
 				textPosition.y = 3*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
@@ -1454,8 +1203,6 @@ int main(int argc, char* argv[])
 					load_song[i].show(screen, fontsmall);
 				}
 
-				boxColor(screen, 0,17.5*scorey,screen->w/255*fortschritt,18*scorey,0x008F00FF);
-
 				ok.show(screen, fontsmall);
 				cancel.show(screen, fontsmall);
 			}
@@ -1626,7 +1373,29 @@ int main(int argc, char* argv[])
 							{
 								if(playmode==0)
 								{
-									wsmidi.Play();
+									for(int i=0;i<6;i++)
+									{
+									  if(pattern[i][aktpos])
+									  {
+										  cout << aktpos << " " << i << " " << pattern[i][0] << endl;
+										  wsmidi.ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][0]-1);
+									  }
+									  else
+									  {
+										  cout << "Clock stop " << i << endl;
+									  }
+									}
+									playmode=1;
+									wsmidi.Clock_Start(aset[3].mididevice);
+									wsmidi.Clock_Start(aset[4].mididevice);
+									wsmidi.Clock_Start(aset[5].mididevice);
+									timerrun=true;
+									aktstep=15;
+									for(int i=0;i<6;i++)
+									{
+										cout << aktpos << " " << i << " " << pattern[i][aktpos] << endl;
+									}
+
 								}
 								else if(playmode==2)
 								{
@@ -1648,7 +1417,14 @@ int main(int argc, char* argv[])
 							else if(CheckMouse(mousex, mousey, stop.button_rect)==true)
 							{
 					        	stop.aktiv = true;
-					        	wsmidi.Stop();
+								playmode=0;
+								wsmidi.Clock_Stop(aset[3].mididevice);
+								wsmidi.Clock_Stop(aset[4].mididevice);
+								wsmidi.Clock_Stop(aset[5].mididevice);
+								timerrun=false;
+								aktstep=15;
+								aktpos=0;
+								startpos=0;
 							}
 							else if(CheckMouse(mousex, mousey, next.button_rect)==true)
 							{
@@ -1707,103 +1483,66 @@ int main(int argc, char* argv[])
 							}
 							else if(CheckMouse(mousex, mousey, bpmff.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpmff.aktiv=true;
+								if(bpm<255)
 								{
-									bpmff.aktiv=true;
-									if(bpm<255)
-									{
-										bpm++;
-									}
+									bpm++;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, bpmfb.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpmfb.aktiv=true;
+								if(bpm>0)
 								{
-									bpmfb.aktiv=true;
-									if(bpm>0)
-									{
-										bpm--;
-									}
+									bpm--;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, bpm10ff.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpm10ff.aktiv=true;
+								if(bpm<245)
 								{
-									bpm10ff.aktiv=true;
-									if(bpm<245)
-									{
-										bpm=bpm+10;;
-									}
+									bpm=bpm+10;;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, bpm10fb.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpm10fb.aktiv=true;
+								if(bpm>9)
 								{
-									bpm10fb.aktiv=true;
-									if(bpm>9)
-									{
-										bpm=bpm-10;
-									}
+									bpm=bpm-10;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, bpmcorff.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpmcorff.aktiv=true;
+								if(bpmcorrect<2.0)
 								{
-									bpmcorff.aktiv=true;
-									if(bpmcorrect<2.0)
-									{
-										bpmcorrect=bpmcorrect+0.01;
-									}
+									bpmcorrect=bpmcorrect+0.01;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, bpmcorfb.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpmcorfb.aktiv=true;
+								if(bpm>-2.0)
 								{
-									bpmcorfb.aktiv=true;
-									if(bpm>-2.0)
-									{
-										bpmcorrect=bpmcorrect-0.01;
-									}
+									bpmcorrect=bpmcorrect-0.01;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, bpmcor10ff.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpmcor10ff.aktiv=true;
+								if(bpmcorrect<2.0)
 								{
-									bpmcor10ff.aktiv=true;
-									if(bpmcorrect<2.0)
-									{
-										bpmcorrect=bpmcorrect+0.10;
-									}
+									bpmcorrect=bpmcorrect+0.10;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, bpmcor10fb.button_rect)==true)
 							{
-								if(clockmodeext==false)
+								bpmcor10fb.aktiv=true;
+								if(bpmcorrect>-2.0)
 								{
-									bpmcor10fb.aktiv=true;
-									if(bpmcorrect>-2.0)
-									{
-										bpmcorrect=bpmcorrect-0.10;
-									}
-								}
-							}
-							else if(CheckMouse(mousex, mousey, extmidi.button_rect)==true)
-							{
-								if(clockmodeext==false)
-								{
-									clockmodeext=true;
-									extmidi.aktiv=true;
-								}
-								else
-								{
-									clockmodeext=false;
-									extmidi.aktiv=false;
+									bpmcorrect=bpmcorrect-0.10;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, info.button_rect)==true)
@@ -2013,7 +1752,7 @@ int main(int argc, char* argv[])
 								{
 									cout << "Save Settings" << endl;
 
-									sprintf(dbpath, "%s/.arturiagang/settings.db", getenv("HOME"));
+									sprintf(dbpath, "%s/.arturiagang/songs.db", getenv("HOME"));
 									if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
 									{
 										cout << "Fehler beim Öffnen: " << sqlite3_errmsg(settingsdb) << endl;
@@ -2184,7 +1923,7 @@ int main(int argc, char* argv[])
 										// Load SongDB
 										ClearPattern();
 										sqlite3 *songsdb;
-									sprintf(dbpath, "%s/.arturiagang/songs.db", getenv("HOME"));
+										sprintf(dbpath, "%s/.arturiagang/songs.db", getenv("HOME"));
 										if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
 										{
 											cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
@@ -2192,13 +1931,14 @@ int main(int argc, char* argv[])
 										}
 										cout << "Songsdatenbank erfolgreich geöffnet!" << endl;
 										sprintf(sql, "SELECT * FROM Song%d",i);
+										cout << sql << endl;
 										if( sqlite3_exec(songsdb,sql,patterncallback,0,0) != SQLITE_OK)
 										{
 											cout << "Fehler beim SELECT: " << sqlite3_errmsg(songsdb) << endl;
 											return 1;
 										}
 										sqlite3_close(songsdb);
-//										cout << "Load Song " << i << endl;
+										cout << "Load Song " << i << endl;
 										songname=load_song[i].button_text;
 										aktsong=i+1;
 										bpm=songset[i].bpm-60;
@@ -2299,6 +2039,7 @@ int main(int argc, char* argv[])
 			        					save_song=i+1;
 			        				}
 			        			}
+			        			cout << save_song << endl;
 			        			if(save_song>0)
 			        			{
 									// Load SongDB
@@ -2312,18 +2053,21 @@ int main(int argc, char* argv[])
 									cout << "Songsdatenbank erfolgreich geöffnet!" << endl;
 
 									sprintf(sql, "UPDATE settings SET name = \"%s\" WHERE id = %d",songname.c_str(),save_song);
+									cout << sql << endl;
 									if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
 									{
 										cout << "Fehler beim UPDATE: " << sqlite3_errmsg(songsdb) << endl;
 										return 1;
 									}
 									sprintf(sql, "UPDATE settings SET bspproject = \"%d\" WHERE id = %d",bspproject+1,save_song);
+									cout << sql << endl;
 									if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
 									{
 										cout << "Fehler beim UPDATE: " << sqlite3_errmsg(songsdb) << endl;
 										return 1;
 									}
 									sprintf(sql, "UPDATE settings SET bpm = \"%d\" WHERE id = %d",bpm+60,save_song);
+									cout << sql << endl;
 									if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
 									{
 										cout << "Fehler beim UPDATE: " << sqlite3_errmsg(songsdb) << endl;
@@ -2341,7 +2085,6 @@ int main(int argc, char* argv[])
 									{
 										for(int j=0;j<254;j++)
 										{
-											fortschritt=j;
 											if(pattern[i][j]>0)
 											{
 												sprintf(sql, "INSERT INTO Song%d (step,device,prog) VALUES (%d,%d,%d)",save_song-1,j,i,pattern[i][j]);
