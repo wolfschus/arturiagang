@@ -4,6 +4,7 @@
 // Version     : 0.9 30.01.2020
 // Copyright   : Wolfgang Schuster
 // Description : Sequencer to control BeatStepPro
+// License     : GNU General Public License v3.0
 //============================================================================
 
 #include <iostream>
@@ -991,6 +992,11 @@ int main(int argc, char* argv[])
 				text = TTF_RenderText_Blended(fontbold, "(c) 2019 - 2020 by Wolfgang Schuster", textColor);
 				textPosition.x = screen->w/2-text->w/2;
 				textPosition.y = 3*scorey;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
+				SDL_FreeSurface(text);
+				text = TTF_RenderText_Blended(fontsmall, "GNU General Public License v3.0", textColor);
+				textPosition.x = screen->w/2-text->w/2;
+				textPosition.y = 4*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
 
 				int i = 0;
