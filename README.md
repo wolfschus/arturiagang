@@ -15,3 +15,6 @@ sudo cp arturigang /usr/local/bin/
 
 rm arturiagang
 
+mkdir ~/.arturiagang
+
+cp -r db/* ~/.arturiagang/
