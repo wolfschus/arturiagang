@@ -1,7 +1,7 @@
 # arturiagang
 A Midi Sequence for Linux / SDL to control Arturia BeatStepPro.
 
-Works perfect on Raspberry Pi with touchscreen. To use touchscreen, pleas run it in fullscreen on X.
+Works perfect on Raspberry Pi with touchscreen. To use touchscreen, please run it in fullscreen on X.
 
 To use binary:
 
