@@ -20,8 +20,11 @@ clean:
 	rm $(TARGET)
 
 setup:
-	mkdir ~/.$(TARGET)
-	cp -r db/* ~/.$(TARGET)
+	if test -d ~/.$(TARGET); \
+	then echo .$(TARGET) exists; \
+	else mkdir ~/.$(TARGET); \
+	cp -r db/* ~/.$(TARGET); \
+	fi
 
 install:
 	cp $(TARGET) /usr/local/bin/
