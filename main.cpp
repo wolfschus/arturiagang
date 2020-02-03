@@ -85,6 +85,7 @@ int startpos=0;
 int aktstep=15;
 int oldstep=0;
 int miditick=0;
+int midiintick=0;
 int oldmiditick=0;
 int timedivision=16;
 int maxstep = 15;
@@ -539,7 +540,12 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 
 		if((int)message->at(0)==248 and playmode==1)
 		{
-  		  wsmidi.NextTick();
+			if(midiintick>1)
+			{
+				wsmidi.NextTick();
+				midiintick=0;
+			}
+			midiintick++;
 		}
 
 		if((int)message->at(0)==240)
