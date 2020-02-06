@@ -54,7 +54,7 @@ using namespace std;
 
 char cstring[512];
 char playmode = 0;
-int pattern[11][256];
+int pattern[12][256];
 
 struct arturiasettings{
 	string name;
@@ -179,6 +179,7 @@ public:
 		if(clockmodeext==false)
 		{
 			Clock_Start(aset[5].mididevice);
+			Clock_Start(aset[11].mididevice);
 		}
 		timerrun=true;
 		aktstep=15;
@@ -192,6 +193,7 @@ public:
 		if(clockmodeext==false)
 		{
 			Clock_Stop(aset[5].mididevice);
+			Clock_Stop(aset[11].mididevice);
 		}
 		timerrun=false;
 
@@ -210,6 +212,7 @@ public:
 		Clock_Stop(aset[3].mididevice);
 		Clock_Stop(aset[4].mididevice);
 		Clock_Stop(aset[5].mididevice);
+		Clock_Stop(aset[11].mididevice);
 		timerrun=false;
 		aktstep=15;
 		aktpos=0;
@@ -269,6 +272,7 @@ public:
 	  if(clockmodeext==false)
 	  {
 		  Clock_Tick(aset[5].mididevice);
+		  Clock_Tick(aset[11].mididevice);
 	  }
 
 	  oldmiditick=miditick;
@@ -283,7 +287,7 @@ public:
 		  aktstep++;
 		  if(aktstep==8)
 		  {
-			  for(int i=0;i<6;i++)
+			  for(int i=0;i<11;i++)
 			  {
 				  if(pattern[i][aktpos]>0)
 				  {
@@ -301,6 +305,10 @@ public:
 				  {
 					  aset[i].aktiv=false;
 				  }
+				  if(i==4)
+				  {
+					  i++;
+				  }
 			  }
 		  }
 		  if(aktstep>maxstep)
@@ -312,6 +320,7 @@ public:
 				Clock_Stop(aset[3].mididevice);
 				Clock_Stop(aset[4].mididevice);
 				Clock_Stop(aset[5].mididevice);
+				Clock_Stop(aset[11].mididevice);
 				timerrun=false;
 				aktstep=15;
 				aktpos=0;
@@ -778,7 +787,7 @@ int main(int argc, char* argv[])
 	}
 	sqlite3_close(settingsdb);
 
-	int aktbank[5] = {0,0,0,0,0};
+	int aktbank[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 	int bspproject = 0;
 	int selsetmididevice = 0;
 	SDL_Rect selsetmidideviceRect;
@@ -1106,56 +1115,109 @@ int main(int argc, char* argv[])
 // Raster
 					for(int j=0;j<6;j++)
 					{
-						if(pattern[j][i+startpos*16]>0)
+						if(sequencegang5==false)
 						{
-							if(j==5 and pattern[j][i+startpos*16]==1)
+							if(pattern[j][i+startpos*16]>0)
 							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF0000FF);
-							}
-							else
-							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x00FF00FF);
-							}
-							if(aset[j].maxbank>1)
-							{
+								if(j==5 and pattern[5][i+startpos*16]==1)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF0000FF);
+								}
+								else
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x00FF00FF);
+								}
+								if(aset[j].maxbank>1)
+								{
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%d",int((pattern[j][i+startpos*16]-1)/aset[j].maxprog));
+									text = TTF_RenderText_Blended(font, tmp, blackColor);
+									textPosition.x = 4*scorex+(2*i)*scorex+3;
+									textPosition.y = 3*scorey+(2*j)*scorey;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
 								SDL_FreeSurface(text);
-								sprintf(tmp, "%d",int((pattern[j][i+startpos*16]-1)/aset[j].maxprog));
+								{
+									sprintf(tmp, "%d",pattern[j][i+startpos*16]-int((pattern[j][i+startpos*16]-1)/aset[j].maxprog)*aset[j].maxprog);
+								}
+								if(j==5 and pattern[5][i+startpos*16]==1)
+								{
+									sprintf(tmp, "%s","Stop");
+								}
+								else
+								{
+									sprintf(tmp, "%d",pattern[j][i+startpos*16]);
+								}
 								text = TTF_RenderText_Blended(font, tmp, blackColor);
-								textPosition.x = 4*scorex+(2*i)*scorex+3;
-								textPosition.y = 3*scorey+(2*j)*scorey;
+								textPosition.x = 6*scorex+(2*i)*scorex-3-text->w;
+								textPosition.y = 5*scorey+(2*j)*scorey-text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 							}
-							SDL_FreeSurface(text);
-							{
-								sprintf(tmp, "%d",pattern[j][i+startpos*16]-int((pattern[j][i+startpos*16]-1)/aset[j].maxprog)*aset[j].maxprog);
-							}
-							if(j==5 and pattern[j][i+startpos*16]==1)
-							{
-								sprintf(tmp, "%s","Stop");
-							}
 							else
 							{
-								sprintf(tmp, "%d",pattern[j][i+startpos*16]);
+								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
 							}
-							text = TTF_RenderText_Blended(font, tmp, blackColor);
-							textPosition.x = 6*scorex+(2*i)*scorex-3-text->w;
-							textPosition.y = 5*scorey+(2*j)*scorey-text->h;
-							SDL_BlitSurface(text, 0, screen, &textPosition);
 						}
 						else
 						{
-							boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
+							if(pattern[j+6][i+startpos*16]>0 or (j==5 and pattern[5][i+startpos*16]>0))
+							{
+								if(j==5 and pattern[5][i+startpos*16]==1)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF0000FF);
+								}
+								else
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x00FF00FF);
+								}
+								if(aset[j+6].maxbank>1)
+								{
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%d",int((pattern[j+6][i+startpos*16]-1)/aset[j+6].maxprog));
+									text = TTF_RenderText_Blended(font, tmp, blackColor);
+									textPosition.x = 4*scorex+(2*i)*scorex+3;
+									textPosition.y = 3*scorey+(2*j)*scorey;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
+								SDL_FreeSurface(text);
+								{
+									sprintf(tmp, "%d",pattern[j+6][i+startpos*16]-int((pattern[j+6][i+startpos*16]-1)/aset[j+6].maxprog)*aset[j+6].maxprog);
+								}
+								if(j==5)
+								{
+									if(pattern[5][i+startpos*16]==1)
+									{
+										sprintf(tmp, "%s","Stop");
+									}
+									else
+									{
+										sprintf(tmp, "%d",pattern[5][i+startpos*16]);
+									}
+								}
+								else
+								{
+									sprintf(tmp, "%d",pattern[j+6][i+startpos*16]);
+								}
+								text = TTF_RenderText_Blended(font, tmp, blackColor);
+								textPosition.x = 6*scorex+(2*i)*scorex-3-text->w;
+								textPosition.y = 5*scorey+(2*j)*scorey-text->h;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+							}
+							else
+							{
+								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
+							}
 						}
 					}
 				}
 // Device Names
-				for(int i=0;i<5;i++)
+				for(int i=0+(sequencegang5*6);i<5+(sequencegang5*6);i++)
 				{
 					SDL_FreeSurface(text);
 					sprintf(tmp, "%s",aset[i].name.c_str());
 					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
 					textPosition.x = 0.2*scorex;
-					textPosition.y = 4*scorey+(2*i)*scorey-text->h/2;
+					textPosition.y = 4*scorey+2*(i-(sequencegang5*6))*scorey-text->h/2;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 				}
 				SDL_FreeSurface(text);
@@ -1995,9 +2057,19 @@ int main(int argc, char* argv[])
 							}
 							else if(CheckMouse(mousex, mousey, rahmen)==true and edit.aktiv==true)
 							{
-								int i = int((mousey/scorey-3)/2);
+								int i = 5;
 								int j = int((mousex/scorex-4)/2)+startpos*16;
-
+								if(sequencegang5==false)
+								{
+									i = int((mousey/scorey-3)/2);
+								}
+								else
+								{
+									if(int((mousey/scorey-3)/2)<5)
+									{
+										i = int((mousey/scorey-3)/2)+6;
+									}
+								}
 								if(prog.aktiv==true)
 								{
 									if(aset[i].maxbank>1)
