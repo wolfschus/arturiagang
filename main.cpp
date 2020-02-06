@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Arturiagang.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.95 31.01.2020
+// Version     : 0.96 06.02.2020
 // Copyright   : Wolfgang Schuster
 // Description : Sequencer to control BeatStepPro
 // License     : GNU General Public License v3.0
@@ -54,7 +54,7 @@ using namespace std;
 
 char cstring[512];
 char playmode = 0;
-int pattern[6][256];
+int pattern[11][256];
 
 struct arturiasettings{
 	string name;
@@ -94,6 +94,7 @@ float bpmcorrect=1.00;
 bool timerrun=false;
 bool clockmodeext=false;
 bool exttimerrun = false;
+bool sequencegang5 = false;
 
 struct cpuwerte{
 	float idle;
@@ -836,6 +837,8 @@ int main(int argc, char* argv[])
 	WSButton settings_up(24,19,2,2,scorex,scorey,up_image,"");
 	WSButton settings_down(26,19,2,2,scorex,scorey,down_image,"");
 	WSButton extmidi(0,17,2,2,scorex,scorey,plug_image,"");
+	WSButton sequencegang5up(34,15,2,2,scorex,scorey,up_image,"");
+	WSButton sequencegang5down(34,15,2,2,scorex,scorey,down_image,"");
 
 	vector <WSButton> manuell_progdown;
 	vector <WSButton> manuell_progup;
@@ -1097,21 +1100,16 @@ int main(int argc, char* argv[])
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 							}
 							SDL_FreeSurface(text);
-							if(j==5 and pattern[j][i+startpos*16]==1)
-							{
-								sprintf(tmp, "%d","Stop");
-							}
-							if(aset[j].maxbank>1)
 							{
 								sprintf(tmp, "%d",pattern[j][i+startpos*16]-int((pattern[j][i+startpos*16]-1)/aset[j].maxprog)*aset[j].maxprog);
-							}
-							else
-							{
-								sprintf(tmp, "%d",pattern[j][i+startpos*16]);
 							}
 							if(j==5 and pattern[j][i+startpos*16]==1)
 							{
 								sprintf(tmp, "%s","Stop");
+							}
+							else
+							{
+								sprintf(tmp, "%d",pattern[j][i+startpos*16]);
 							}
 							text = TTF_RenderText_Blended(font, tmp, blackColor);
 							textPosition.x = 6*scorex+(2*i)*scorex-3-text->w;
@@ -1199,6 +1197,18 @@ int main(int argc, char* argv[])
 				}
 
 				extmidi.show(screen, fontsmall);
+				
+// Umschalter BSP and sequencegang5
+
+				if(sequencegang5==true)
+				{
+					sequencegang5up.show(screen, fontsmall);
+				}
+				else
+				{
+					sequencegang5down.show(screen, fontsmall);
+				}
+				
 // Exit Info
 
 				exit.show(screen, fontsmall);
@@ -1797,6 +1807,17 @@ int main(int argc, char* argv[])
 									{
 										bpmcorrect=bpmcorrect-0.10;
 									}
+								}
+							}
+							else if(CheckMouse(mousex, mousey, sequencegang5up.button_rect)==true)
+							{
+								if(sequencegang5==false)
+								{
+									sequencegang5=true;
+								}
+								else
+								{
+									sequencegang5=false;
 								}
 							}
 							else if(CheckMouse(mousex, mousey, extmidi.button_rect)==true)
@@ -2492,6 +2513,8 @@ int main(int argc, char* argv[])
 			        	prev.aktiv = false;
 						settings_up.aktiv=false;
 						settings_down.aktiv=false;
+						sequencegang5up.aktiv=false;
+						sequencegang5down.aktiv=false;
 			        	for(int i=0;i<5;i++)
 			        	{
 			        		manuell_progdown[i].aktiv = false;
