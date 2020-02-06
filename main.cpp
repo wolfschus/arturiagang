@@ -58,7 +58,7 @@ int pattern[11][256];
 
 struct arturiasettings{
 	string name;
-	int mididevice;
+	unsigned int mididevice;
 	int midichannel;
 	int minprog;
 	int maxprog;
@@ -792,6 +792,30 @@ int main(int argc, char* argv[])
 	selsetmidichannelRect.y = 4.5*scorey;
 	selsetmidichannelRect.w = 6*scorex;
 	selsetmidichannelRect.h = 12*scorey;
+	int selsetminprog = 0;
+	SDL_Rect selsetminprogRect;
+	selsetminprogRect.x = 7*scorex;
+	selsetminprogRect.y = 4.5*scorey;
+	selsetminprogRect.w = 4*scorex;
+	selsetminprogRect.h = 10*scorey;
+	int selsetmaxprog = 0;
+	SDL_Rect selsetmaxprogRect;
+	selsetmaxprogRect.x = 13*scorex;
+	selsetmaxprogRect.y = 4.5*scorey;
+	selsetmaxprogRect.w = 4*scorex;
+	selsetmaxprogRect.h = 10*scorey;
+	int selsetminbank = 0;
+	SDL_Rect selsetminbankRect;
+	selsetminbankRect.x = 19*scorex;
+	selsetminbankRect.y = 4.5*scorey;
+	selsetminbankRect.w = 4*scorex;
+	selsetminbankRect.h = 10*scorey;
+	int selsetmaxbank = 0;
+	SDL_Rect selsetmaxbankRect;
+	selsetmaxbankRect.x = 25*scorex;
+	selsetmaxbankRect.y = 4.5*scorey;
+	selsetmaxbankRect.w = 4*scorex;
+	selsetmaxbankRect.h = 10*scorey;
 
 	char keyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","z","u","i","o","p","a","s","d","f","g","h","j","k","l","+","y","x","c","v","b","n","m",",",".","-"};
 	char shkeyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","Q","W","E","R","T","Z","U","I","O","P","A","S","D","F","G","H","J","K","L","*","Y","X","C","V","B","N","M",";",":","_"};
@@ -839,6 +863,8 @@ int main(int argc, char* argv[])
 	WSButton extmidi(0,17,2,2,scorex,scorey,plug_image,"");
 	WSButton sequencegang5up(34,15,2,2,scorex,scorey,up_image,"");
 	WSButton sequencegang5down(34,15,2,2,scorex,scorey,down_image,"");
+	WSButton setsequencegang5up(34,17,2,2,scorex,scorey,up_image,"");
+	WSButton setsequencegang5down(34,17,2,2,scorex,scorey,down_image,"");
 
 	vector <WSButton> manuell_progdown;
 	vector <WSButton> manuell_progup;
@@ -952,14 +978,14 @@ int main(int argc, char* argv[])
 	vector<string> midioutname;
 
 	// Check available Midi ports.
-	int onPorts = midiout->getPortCount();
+	unsigned int onPorts = midiout->getPortCount();
 	if ( onPorts == 0 )
 	{
 		cout << "No ports available!" << endl;
 	}
 	else
 	{
-		for(int i=0;i<onPorts;i++)
+		for(unsigned int i=0;i<onPorts;i++)
 		{
 			midioutname.push_back(midiout->getPortName(i));
 			cout << midiout->getPortName(i) << endl;
@@ -1313,7 +1339,14 @@ int main(int argc, char* argv[])
 				{
 					if(selsetmididevice>0)
 					{
-						boxColor(screen, selsetmidideviceRect.x,selsetmidideviceRect.y+2*(selsetmididevice-1)*scorey,selsetmidideviceRect.x+selsetmidideviceRect.w,selsetmidideviceRect.y+2*selsetmididevice*scorey,0x4F4F4FFF);
+						if(sequencegang5==true)
+						{
+							boxColor(screen, selsetmidideviceRect.x,selsetmidideviceRect.y+2*(selsetmididevice-7)*scorey,selsetmidideviceRect.x+selsetmidideviceRect.w,selsetmidideviceRect.y+2*(selsetmididevice-6)*scorey,0x4F4F4FFF);
+						}
+						else
+						{
+							boxColor(screen, selsetmidideviceRect.x,selsetmidideviceRect.y+2*(selsetmididevice-1)*scorey,selsetmidideviceRect.x+selsetmidideviceRect.w,selsetmidideviceRect.y+2*selsetmididevice*scorey,0x4F4F4FFF);
+						}
 					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "MIDI Device", textColor);
@@ -1333,43 +1366,59 @@ int main(int argc, char* argv[])
 				}
 				else if (settingsmode==1)
 				{
+					if(selsetminprog>0)
+					{
+						boxColor(screen, selsetminprogRect.x,selsetminprogRect.y+2*(selsetminprog-1)*scorey,selsetminprogRect.x+selsetminprogRect.w,selsetminprogRect.y+2*selsetminprog*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "min Prog", textColor);
-					textPosition.x = 9*scorex;
+					textPosition.x = 7*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
+					if(selsetmaxprog>0)
+					{
+						boxColor(screen, selsetmaxprogRect.x,selsetmaxprogRect.y+2*(selsetmaxprog-1)*scorey,selsetmaxprogRect.x+selsetmaxprogRect.w,selsetmaxprogRect.y+2*selsetmaxprog*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "max Prog", textColor);
-					textPosition.x = 15*scorex;
+					textPosition.x = 13*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
+					if(selsetminbank>0)
+					{
+						boxColor(screen, selsetminbankRect.x,selsetminbankRect.y+2*(selsetminbank-1)*scorey,selsetminbankRect.x+selsetminbankRect.w,selsetminbankRect.y+2*selsetminbank*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "min Bank", textColor);
-					textPosition.x = 21*scorex;
+					textPosition.x = 19*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
+					if(selsetmaxbank>0)
+					{
+						boxColor(screen, selsetmaxbankRect.x,selsetmaxbankRect.y+2*(selsetmaxbank-1)*scorey,selsetmaxbankRect.x+selsetmaxbankRect.w,selsetmaxbankRect.y+2*selsetmaxbank*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "max Bank", textColor);
-					textPosition.x = 27*scorex;
+					textPosition.x = 25*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 				}
 
-				for(int i=0;i<6;i++)
+				for(int i=0+(sequencegang5*6);i<6+(sequencegang5*6);i++)
 				{
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, aset[i].name.c_str(), textColor);
 					textPosition.x = 0.2*scorex;
-					textPosition.y = 5*scorey+2*i*scorey;
+					textPosition.y = 5*scorey+2*(i-(sequencegang5*6))*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
 					if(settingsmode==0)
 					{
 						SDL_FreeSurface(text);
-						if(int(aset[i].mididevice)<onPorts)
+						if(aset[i].mididevice<onPorts)
 						{
 							sprintf(tmp, "%s",midioutname[aset[i].mididevice].c_str());
 						}
@@ -1379,44 +1428,44 @@ int main(int argc, char* argv[])
 						}
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x = 6*scorex;
-						textPosition.y = 5*scorey+2*i*scorey;
+						textPosition.y = 5*scorey+2*(i-(sequencegang5*6))*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
 						sprintf(tmp, "%d",aset[i].midichannel+1);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x = 33*scorex-text->w;
-						textPosition.y = 5*scorey+2*i*scorey;
+						textPosition.y = 5*scorey+2*(i-(sequencegang5*6))*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 					}
-					else if (settingsmode==1 and i<5)
+					else if (settingsmode==1 and (i<5 or i>6 or i<11))
 					{
 						SDL_FreeSurface(text);
 						sprintf(tmp, "%d",aset[i].minprog);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
-						textPosition.x =12*scorex-text->w;
-						textPosition.y = 5*scorey+2*i*scorey;
+						textPosition.x =9*scorex-text->w;
+						textPosition.y = 5*scorey+2*(i-(sequencegang5*6))*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
 						sprintf(tmp, "%d",aset[i].maxprog);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
-						textPosition.x = 18*scorex-text->w;
-						textPosition.y = 5*scorey+2*i*scorey;
+						textPosition.x = 15*scorex-text->w;
+						textPosition.y = 5*scorey+2*(i-(sequencegang5*6))*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
 						sprintf(tmp, "%d",aset[i].minbank);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
-						textPosition.x = 24*scorex-text->w;
-						textPosition.y = 5*scorey+2*i*scorey;
+						textPosition.x = 21*scorex-text->w;
+						textPosition.y = 5*scorey+2*(i-(sequencegang5*6))*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
 						sprintf(tmp, "%d",aset[i].maxbank);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
-						textPosition.x = 30*scorex-text->w;
-						textPosition.y = 5*scorey+2*i*scorey;
+						textPosition.x = 27*scorex-text->w;
+						textPosition.y = 5*scorey+2*(i-(sequencegang5*6))*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 					}
@@ -1438,6 +1487,16 @@ int main(int argc, char* argv[])
 				settings_up.show(screen, fontsmall);
 				settings_down.show(screen, fontsmall);
 
+				// Umschalter BSP and sequencegang5
+
+				if(sequencegang5==true)
+				{
+					setsequencegang5up.show(screen, fontsmall);
+				}
+				else
+				{
+					setsequencegang5down.show(screen, fontsmall);
+				}
 			}
 
 			if(mode==4)  // Open Song
@@ -2112,6 +2171,17 @@ int main(int argc, char* argv[])
 							{
 								mode=0;
 							}
+							else if(CheckMouse(mousex, mousey, setsequencegang5up.button_rect)==true)
+							{
+								if(sequencegang5==false)
+								{
+									sequencegang5=true;
+								}
+								else
+								{
+									sequencegang5=false;
+								}
+							}
 
 							if(settingsmode==0)
 							{
@@ -2123,10 +2193,17 @@ int main(int argc, char* argv[])
 								}
 								else if(CheckMouse(mousex, mousey, selsetmidideviceRect)==true)
 								{
-									selsetmididevice=(mousey-selsetmidideviceRect.y)/scorey/2+1;
-									if(selsetmididevice>0 and selsetmididevice<4)
+									if(sequencegang5==false)
 									{
-										selsetmididevice=6;
+										selsetmididevice=(mousey-selsetmidideviceRect.y)/scorey/2+1;
+										if(selsetmididevice>0 and selsetmididevice<4)
+										{
+											selsetmididevice=6;
+										}
+									}
+									else
+									{
+										selsetmididevice=12;
 									}
 									selsetmidichannel=0;
 								}
@@ -2197,6 +2274,116 @@ int main(int argc, char* argv[])
 								if(CheckMouse(mousex, mousey, settings_prev.button_rect)==true)
 								{
 									settingsmode=0;
+								}
+								if(CheckMouse(mousex, mousey, settings_prev.button_rect)==true)
+								{
+									settingsmode=0;
+									selsetmidichannel=0;
+									selsetmididevice=0;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetminprogRect)==true)
+								{
+									selsetminprog=(mousey-selsetminprogRect.y)/scorey/2+1;
+									selsetmaxprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetmaxprogRect)==true)
+								{
+									selsetmaxprog=(mousey-selsetmaxprogRect.y)/scorey/2+1;
+									selsetminprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetminbankRect)==true)
+								{
+									selsetminbank=(mousey-selsetminbankRect.y)/scorey/2+1;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetmaxbank=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetmaxbankRect)==true)
+								{
+									selsetmaxbank=(mousey-selsetmaxbankRect.y)/scorey/2+1;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetminbank=0;
+								}
+								else if(CheckMouse(mousex, mousey, settings_up.button_rect)==true)
+								{
+									settings_up.aktiv=true;
+									if(selsetminprog>0) 
+									{
+										if(aset[selsetminprog-1+sequencegang5*6].minprog<127)
+										{
+											aset[selsetminprog-1+sequencegang5*6].minprog++;
+											changesettings=true;
+										}
+									}
+									if(selsetmaxprog>0) 
+									{
+										if(aset[selsetmaxprog-1+sequencegang5*6].maxprog<127)
+										{
+											aset[selsetmaxprog-1+sequencegang5*6].maxprog++;
+											changesettings=true;
+										}
+									}
+									if(selsetminbank>0) 
+									{
+										if(aset[selsetminbank-1+sequencegang5*6].minbank<15)
+										{
+											aset[selsetminbank-1+sequencegang5*6].minbank++;
+											changesettings=true;
+										}
+									}
+									if(selsetmaxbank>0) 
+									{
+										if(aset[selsetmaxbank-1+sequencegang5*6].maxbank<15)
+										{
+											aset[selsetmaxbank-1+sequencegang5*6].maxbank++;
+											changesettings=true;
+										}
+									}
+								}
+								else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
+								{
+									settings_down.aktiv=true;
+									if(selsetminprog>0) 
+									{
+										if(aset[selsetminprog-1+sequencegang5*6].minprog>0)
+										{
+											aset[selsetminprog-1+sequencegang5*6].minprog--;
+											changesettings=true;
+										}
+									}
+									if(selsetmaxprog>0) 
+									{
+										if(aset[selsetmaxprog-1+sequencegang5*6].maxprog>0)
+										{
+											aset[selsetmaxprog-1+sequencegang5*6].maxprog--;
+											changesettings=true;
+										}
+									}
+									if(selsetminbank>0) 
+									{
+										if(aset[selsetminbank-1+sequencegang5*6].minbank>0)
+										{
+											aset[selsetminbank-1+sequencegang5*6].minbank--;
+											changesettings=true;
+										}
+									}
+									if(selsetmaxbank>0) 
+									{
+										if(aset[selsetmaxbank-1+sequencegang5*6].maxbank>0)
+										{
+											aset[selsetmaxbank-1+sequencegang5*6].maxbank--;
+											changesettings=true;
+										}
+									}
 								}
 							}
 			        	}
@@ -2515,6 +2702,8 @@ int main(int argc, char* argv[])
 						settings_down.aktiv=false;
 						sequencegang5up.aktiv=false;
 						sequencegang5down.aktiv=false;
+						setsequencegang5up.aktiv=false;
+						setsequencegang5down.aktiv=false;
 			        	for(int i=0;i<5;i++)
 			        	{
 			        		manuell_progdown[i].aktiv = false;
