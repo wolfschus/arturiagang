@@ -267,39 +267,39 @@ public:
 
 	void NextTick()
 	{
-	  Clock_Tick(aset[3].mididevice);
-	  Clock_Tick(aset[4].mididevice);
-	  if(clockmodeext==false)
-	  {
-		  Clock_Tick(aset[5].mididevice);
-		  Clock_Tick(aset[11].mididevice);
-	  }
+		Clock_Tick(aset[3].mididevice);
+		Clock_Tick(aset[4].mididevice);
+		if(clockmodeext==false)
+		{
+			Clock_Tick(aset[5].mididevice);
+			Clock_Tick(aset[11].mididevice);
+		}
 
-	  oldmiditick=miditick;
-	  if(miditick<5)
-	  {
-		  miditick++;
-	  }
-	  else
-	  {
-		  miditick=0;
-		  oldstep=aktstep;
-		  aktstep++;
-		  if(aktstep==8)
-		  {
+		oldmiditick=miditick;
+		if(miditick<5)
+		{
+			miditick++;
+		}
+		else
+		{
+			miditick=0;
+			oldstep=aktstep;
+			aktstep++;
+			if(aktstep==8)
+			{
 			  for(int i=0;i<11;i++)
 			  {
 				  if(pattern[i][aktpos]>0)
 				  {
-					  aset[i].aktiv=true;
-						if(aset[i].minbank==aset[i].maxbank)
-						{
-							ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
-						}
-						else
-						{
-							ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
-						}
+						aset[i].aktiv=true;
+//						if(aset[i].minbank==aset[i].maxbank)
+//						{
+						ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
+//						}
+//						else
+//						{
+//							ProgramChange(aset[i].mididevice, aset[i].midichannel, pattern[i][aktpos]-1);
+//						}
 				  }
 				  else
 				  {
@@ -311,6 +311,7 @@ public:
 				  }
 			  }
 		  }
+		  
 		  if(aktstep>maxstep)
 		  {
 			  aktstep=0;
