@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Arturiagang.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.96 06.02.2020
+// Version     : 0.97 09.02.2020
 // Copyright   : Wolfgang Schuster
 // Description : Sequencer to control BeatStepPro
 // License     : GNU General Public License v3.0
@@ -1138,9 +1138,6 @@ int main(int argc, char* argv[])
 									SDL_BlitSurface(text, 0, screen, &textPosition);
 								}
 								SDL_FreeSurface(text);
-								{
-									sprintf(tmp, "%d",pattern[j][i+startpos*16]-int((pattern[j][i+startpos*16]-1)/aset[j].maxprog)*aset[j].maxprog);
-								}
 								if(j==5 and pattern[5][i+startpos*16]==1)
 								{
 									sprintf(tmp, "%s","Stop");
