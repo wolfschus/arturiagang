@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Arturiagang.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.97 09.02.2020
+// Version     : 0.98 20.02.2020
 // Copyright   : Wolfgang Schuster
 // Description : Sequencer to control BeatStepPro
 // License     : GNU General Public License v3.0
@@ -110,6 +110,8 @@ struct sysinfo memInfo;
 
 RtMidiOut *midiout = new RtMidiOut();
 RtMidiIn *midiin = new RtMidiIn();
+
+SDL_Event CPUevent;
 
 class WSMidi
 {
@@ -387,7 +389,8 @@ public:
    {
       while(1)
 	  {
-    	  usleep(200000);
+    	  usleep(20000);
+    	  SDL_PushEvent(&CPUevent);
     	  oldcpu.idle=newcpu.idle;
     	  oldcpu.usage=newcpu.usage;
     	  newcpu=get_cpuusage();
@@ -1718,7 +1721,7 @@ int main(int argc, char* argv[])
 
 		// Wir holen uns so lange neue Ereignisse, bis es keine mehr gibt.
 		SDL_Event event;
-		while(SDL_PollEvent(&event))
+		if(SDL_WaitEvent(&event)!=0)
 		{
 			// Was ist passiert?
 			switch(event.type)
