@@ -17,4 +17,5 @@ make
 To install:
 
 make setup
+
 sudo make install
